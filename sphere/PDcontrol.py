@@ -53,7 +53,6 @@ vinit = np.array([0, 0])
 env.set_state(qinit,vinit)
 # get initial observation, required for the loop below
 obs = env._get_obs()
-#obs = env.reset([3.0, -5.0, 0.0, 0.0])
 for _ in range(200):
     #print("**********************")
     env.render()
