@@ -27,9 +27,9 @@ class SphereEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     	obs = np.concatenate((pos,vel))
     	return obs
     
-    def reset_model(self, state=np.array([0.,0.,0.,0.])):
-        qpos = state[0:2]
-        qvel = state[-2:]
+    def reset_model(self):
+        qpos = self.init_qpos
+        qvel = self.init_qvel
         #print "*** qpos: ", qpos
         #print "*** qvel: ", qvel
         self.set_state(qpos, qvel)

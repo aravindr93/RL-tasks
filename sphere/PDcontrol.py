@@ -32,7 +32,7 @@ def normalize(val):
 
 # Initializing PD controllers with gains
 pd_agent_x = PD(1, 0.5)
-pd_agent_y = PD(1, 0.5)
+pd_agent_y = PD(1, 0.75)
 
 x_goal, y_goal = (-3, 7)
 
@@ -45,8 +45,16 @@ y = []
 
 outdir = '/tmp/PDcontrol'
 env.monitor.start(outdir, force=True)
-obs = env.reset()
-for _ in range(500):
+# first step is to reset environment (mujoco requirement, so do it!)
+env.reset()
+# select initial position and velocity
+qinit = np.array([3, -5])
+vinit = np.array([0, 0])
+env.set_state(qinit,vinit)
+# get initial observation, required for the loop below
+obs = env._get_obs()
+#obs = env.reset([3.0, -5.0, 0.0, 0.0])
+for _ in range(200):
     #print("**********************")
     env.render()
 
