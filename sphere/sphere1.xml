@@ -1,0 +1,37 @@
+<mujoco model="Sphere">
+	<compiler angle="radian" inertiafromgeom="true"/>
+	<default>
+		<geom contype="0" friction="1 0.1 0.1" rgba="1 1 1 1"/>
+	</default>
+	<option gravity="0 0 -9.81" integrator="RK4" timestep="0.01"/>
+	<worldbody>
+		<geom conaffinity="0" contype="0" name="ground" pos="0 0 -0.1" rgba="0.9 0.9 0.9 1" size="10 10 0.1" type="plane"/>
+		<!-- Sphere -->
+		<body name="ball" pos="0 0 0.1">
+            <geom friction= "2.0" conaffinity="1" contype="1" density="1000" type="sphere" size="0.25" rgba="0.2 0.2 0.8 1"/>
+            <joint axis="1 0 0" name="x-rotor" pos="0 0 0.2" type="slide"/>
+            <joint axis="0 1 0" name="y-rotor" pos="0 0 0.2" type="slide"/>
+            
+           
+        </body>
+		
+		<!-- Wall -->
+		<body name="wall-up" pos="-10 0 0.3">
+            <geom friction= "2.0" conaffinity="1" contype="1" density="1000" size="0.2 10 0.4" rgba="0.9 0.2 0.2 1" type="box"/>
+        </body>
+        <body name="wall-left" pos="-0.04 -10 0.3">
+            <geom conaffinity="1" friction= "2.0" contype="1" density="1000" size="10 0.2 0.4" rgba="0.9 0.2 0.2 1" type="box"/>
+        </body>
+        <body name="wall-bottom" pos="10 0 0.3">
+            <geom friction= "2.0" conaffinity="1" contype="1" density="1000" size="0.2 10 0.4" rgba="0.9 0.2 0.2 1" type="box"/>
+        </body>
+        <body name="wall-right" pos="-0.04 10.0 0.3">
+            <geom conaffinity="1" friction= "2.0" contype="1" density="1000" size="10 0.2 0.4" rgba="0.9 0.2 0.2 1" type="box"/>
+        </body>
+        
+	</worldbody>
+	<actuator>
+        <motor ctrllimited="true" ctrlrange="-3 3" gear="150.0" joint="x-rotor"/>
+        <motor ctrllimited="true" ctrlrange="-3 3" gear="150.0" joint="y-rotor"/>
+    </actuator>
+</mujoco>
