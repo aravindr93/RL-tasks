@@ -46,6 +46,7 @@ class LQR(object):
         self.B = np.random.rand(self.nx, self.nu)  # 2 actuators
         self.Q = np.diag([1, gamma, gamma**2, gamma**3])
         self.R = np.eye(self.nu)
+        self.K = np.random.rand(self.nu, self.nx)
         
         # book-keeping of time and states
         self.time_step = []
@@ -73,9 +74,11 @@ class LQR(object):
         # step 2: using A, B, Q, R find the control gain K
         # step 3: use state feedback form to calculate control = -K*state
 
-        self.A,self.B = self.local_learn(state)  # locally learn model around state
-        K, Ig1, Ig2 = dlqr(self.A, self.B, self.Q, self.R)
-        return K
+        # learn model only once in a while
+        if(self.time_step[-1]%50 == 0):
+        	self.A,self.B = self.local_learn(state)  # locally learn model around state
+        	self.K, Ig1, Ig2 = dlqr(self.A, self.B, self.Q, self.R)
+        return self.K
 
     def local_learn(self, state):
     	A = self.A
