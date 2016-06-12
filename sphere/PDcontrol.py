@@ -34,7 +34,7 @@ def normalize(val):
 pd_agent_x = PD(1, 0.5)
 pd_agent_y = PD(1, 0.5)
 
-x_goal, y_goal = (-7, 4)
+x_goal, y_goal = (-3, 7)
 
 # min and max on differences for calculating force (i.e. actuator constraints)
 min_val, max_val = (-3, 3)
@@ -66,9 +66,9 @@ for _ in range(500):
         action_x = -3
   
     if(action_y > 3):
-        action_y = 2.5
+        action_y = 3
     elif (action_y < -3):
-        action_y = -2.5
+        action_y = -3
     
     action = np.array([action_x, action_y])
     obs = env.step(action)[0]

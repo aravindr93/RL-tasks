@@ -8,14 +8,16 @@ class SphereEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
     
     def _step(self, a):
-	# Only the control part of cost is implimented here
-	# Cost corresponding to deviation from goal position written in agent since simulation needs no access to goal position
-	ctrl_cost_coeff = 0.01
-        reward_ctrl = -ctrl_cost_coeff*np.square(a).sum()
-        reward = reward_ctrl
+    	
+    	# Only the control or power part of cost is implimented here
+		# Cost corresponding to deviation from goal position written in agent 
+		# since simulation needs no access to goal position
+
+        ctrl_cost_coeff = 0.01
+        reward_ctrl = -np.square(a).sum()
         self.do_simulation(a, self.frame_skip)
-        obs = self._get_obs()
-        return obs, reward
+        ob = self._get_obs()
+        return ob, reward_ctrl, False, dict(reward_ctrl=reward_ctrl)
     
     def _get_obs(self):
     	pos = self.model.data.qpos.flat[:2]
@@ -25,5 +27,10 @@ class SphereEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     	obs = np.concatenate((pos,vel))
     	return obs
     
-    def reset_model(self):
+    def reset_model(self, state=np.array([0.,0.,0.,0.])):
+        qpos = state[0:2]
+        qvel = state[-2:]
+        #print "*** qpos: ", qpos
+        #print "*** qvel: ", qvel
+        self.set_state(qpos, qvel)
         return self._get_obs()
