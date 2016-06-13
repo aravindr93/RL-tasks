@@ -4,10 +4,6 @@
     For continuous control, need to do actor critic
     Aravind Rajeswaran, 13th June 2016
 '''
-import warnings
-warnings.filterwarnings("ignore")
-
-
 import gym
 import numpy as np
 import pylab as pl
@@ -30,7 +26,8 @@ class QN(object):
         self.net = MLPRegressor(hidden_layer_sizes=(10,10),
                                max_iter=1,
                                algorithm='sgd',
-                               learning_rate='adaptive',
+                               learning_rate='constant',
+                               learning_rate_init=0.0001,
                                warm_start=True,
                                momentum=0.9,
                                nesterovs_momentum=True
@@ -39,7 +36,7 @@ class QN(object):
         self.initialize_network()
 
         # set experience replay
-        self.mbsize = 5     # mini-batch size
+        self.mbsize = 64     # mini-batch size
         self.er_s =    []
         self.er_a =    []
         self.er_r =    []
@@ -48,8 +45,8 @@ class QN(object):
 
     def initialize_network(self):
         # function to initialize network weights
-        xtrain = np.random.rand(100, self.nx)
-        ytrain = np.random.rand(100, self.ny)
+        xtrain = np.random.rand(64, self.nx)
+        ytrain = np.random.rand(64, self.ny)
         self.net.fit(xtrain, ytrain)
         
     def update_network(self):
@@ -60,19 +57,18 @@ class QN(object):
         # calculate target
         target = np.random.rand(len(chosen), self.ny)
 
-        #print target
-
         for j,i in enumerate(chosen):
-            # do a forward pass through s_p
-            Q_p = self.net.predict(self.er_sp[i])
+            # do a forward pass through s and sp
+            Q_s =  self.net.predict(self.er_s[i].reshape(1,-1))
+            Q_sp = self.net.predict(self.er_sp[i].reshape(1,-1))
             #print "QP : \n", Q_p
-            target[j,:] = Q_p
+            target[j,:] = Q_s       # target initialized to current prediction
             #print "target[j,:] : \n", target[j,:], type(target[j,:])
 
             if(self.er_done[i] == True):
-                target[j,self.er_a[i]] = self.er_r[i]
+                target[j,self.er_a[i]] = self.er_r[i]       # if end of episode, target is terminal reward
             else:
-                target[j,self.er_a[i]] = self.er_r[i] + 0.99*max(max(Q_p))   # Q_p is list of list (why?)
+                target[j,self.er_a[i]] = self.er_r[i] + 0.99*max(max(Q_sp))   # Q_sp is list of list (why?)
 
         # fit the network
         self.net.fit(Xtrain, target) # single step of SGD
@@ -90,7 +86,7 @@ state = env.reset()
 
 # Initial data build up
 done_flag=0
-for i in range(500):
+for i in range(1000):
     # Reset env once in a while
     if(done_flag==True or i%100==0 and i!=0):
         state = env.reset()
@@ -104,27 +100,31 @@ for i in range(500):
     state = next_state
 
 print "Initial memory built!!"
+agent.update_network()
+print "Initial network loss = ", agent.net.loss_
 
 print "******** Starting learning process *************"
-num_plays = 100000
-episode_length = 500
-update_freq = 50
+num_steps = 1000
+reset_freq = 500
+update_freq = 1
+print_freq = 250
 
-performance = np.random.rand(num_plays)
+performance = np.random.rand(num_steps)
+error_decay = np.zeros(num_steps // update_freq)
 
 state = env.reset()
-for i in range(num_plays):
-    if(done_flag==True or i%episode_length==0 and i!=0):
+for i in range(num_steps):
+    if(done_flag==True or i%reset_freq==0 and i!=0):
         state = env.reset()
         done_flag=0
 
-    Q_pred = np.array(agent.net.predict(state))
+    Q_pred = np.array(agent.net.predict(state.reshape(1,-1)))
     pi = softmax(Q_pred.ravel())
-    action = np.random.choice(np.array([0,1]),1,p=list(pi))
-    action = int(action)
+    action = int( np.random.choice(np.array([0,1]),1,p=list(pi)) )
+
     next_state, reward, done_flag, info = env.step(action)
     if(done_flag==True):
-        reward = -10
+        reward= -10
 
     agent.append_memory(state,action,reward,next_state,done_flag)
     state = next_state
@@ -132,26 +132,30 @@ for i in range(num_plays):
 
     if(i%update_freq==0):
         agent.update_network()
-        print "Network updated...."
+        error_decay[i // update_freq] = agent.net.loss_
 
-plt.plot(performance[-500:])
+    if(i%print_freq==0):
+        print "Now in iteration: ", i, " of ", num_steps
+        print "Network l2 loss = ", agent.net.loss_
+
+plt.plot(error_decay[-1000:])
 plt.show()
-
-# Evaluate performance
-print "Evaluating performance............."
-for _ in range(2):
-    state = env.reset()
-    for t in range(50):
-        env.render()
-
-        Q_pred = np.array(agent.net.predict(state))
-        pi = softmax(Q_pred.ravel())
-        action = np.random.choice(np.array([0, 1]), 1, p=list(pi))
-        action = int(action)
-
-        next_state, reward, done_flag, info = env.step(action)
-
-        if done_flag:
-            break
-
-
+# plt.plot(performance[-500:])
+# plt.show()
+#
+# # Evaluate performance
+# print "Evaluating performance............."
+# for _ in range(5):
+#     state = env.reset()
+#     for t in range(500):
+#         env.render()
+#
+#         Q_pred = np.array(agent.net.predict(state.reshape(1,-1)))
+#         pi = softmax(Q_pred.ravel())
+#         action = np.random.choice(np.array([0, 1]), 1, p=list(pi))
+#         action = int(action)
+#
+#         next_state, reward, done_flag, info = env.step(action)
+#
+#         if done_flag:
+#             break
