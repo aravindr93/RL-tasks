@@ -18,6 +18,7 @@ def epsilon_greedy(Q, eps=0.1):
     action = int(np.random.choice(np.arange(len(Q)), 1, p=list(pi)))
     return pi, action
 
+
 # Agent class ================================================================
 class QN(object):
     def __init__(self, num_inputs, num_outputs):
@@ -89,13 +90,13 @@ class QN(object):
             self.er_sp[self.whead] = sp
             self.er_done[self.whead] = done
             self.whead = (self.whead+1) % self.er_size
-
 # ===========================================================================================================
 
 with open('objs.pickle') as f:
     agent = pickle.load(f)
 
-for _ in range(20):
+env.monitor.start('./video/cartpole-0')
+for _ in range(100):
     s = env.reset()
     time = 0
     done = 0
@@ -106,3 +107,4 @@ for _ in range(20):
         pi, a = epsilon_greedy(Q.ravel(),eps=0)
         sp, r, done, info = env.step(a)
         s = sp
+env.monitor.close()

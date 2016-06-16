@@ -4,6 +4,7 @@
     For continuous control, need to do actor critic
     Aravind Rajeswaran, 13th June 2016
 '''
+import time as t
 import gym
 import numpy as np
 import pylab as pl
@@ -132,7 +133,7 @@ class QN(object):
             self.er_done[self.whead] = done
             self.whead = (self.whead+1) % self.er_size
 
-
+start_time = t.time()
 # Set up the Q learning agent
 agent = QN(4, 2)
 state = env.reset()
@@ -196,6 +197,8 @@ for ep in range(num_episodes):
         print "Now in episode: ", ep, " of ", num_episodes
         print "Agent performance = ", performance[ep]
 
+end_time = t.time()
+print "Total time", (end_time - start_time)
 plt.plot(performance[-100:])
 plt.show()
 
