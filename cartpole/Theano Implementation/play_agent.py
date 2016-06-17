@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.optimizers import SGD
 from keras.layers.advanced_activations import LeakyReLU
+
 env = gym.make('CartPole-v0')
 
 
@@ -21,45 +22,38 @@ def epsilon_greedy(Q, eps=0.1):
     return pi, action
 
 
-# Agent class ================================================================
 class QN(object):
-    def __init__(self, env):
-        self.nx = 4
-        self.ny = 2
-        self.env = env
-        self.net = self.create_network(env.observation_space, \
-                                        env.action_space)
-        self.initialize_network()
-        
-        
-        
+    "Q-network class object"
+    def __init__(self, nx, ny):
+        self.nx = nx
+        self.ny = ny
+        self.create_network()
+
         # set experience replay
-        self.mbsize = 128 # mini-batch size
+        self.mbsize = 128       # mini-batch size
         self.er_s = []
         self.er_a = []
         self.er_r = []
         self.er_done = []
         self.er_sp = []
 
-        self.er_size = 2000  # total size of mb, impliment as queue
-        self.whead = 0  # write head
+        self.er_size = 2000     # total size of mb, implement as queue
+        self.whead = 0          # write head
 
-    def create_network(self, obs_space, ac_space):
-        net = Sequential()
-        net.add(Dense(50, input_dim=4, init='uniform',\
-                            activation='relu'))
-        net.add(Dense(10, init='uniform',\
-                            activation='relu'))
-        net.add(Dense(output_dim=2, init='uniform'))                            
-        return net
-    
-    def initialize_network(self):
-        # function to initialize network weights
-        sgd = SGD(lr=0.001, momentum=0.9, nesterov=True)
-        self.net.compile(loss="mean_squared_error", optimizer='sgd')
+    def create_network(self):
+        "function to create the network"
+        self.net = Sequential()
+        self.net.add(Dense(50, input_dim=self.nx, init='uniform',
+                      activation='relu'))
+        self.net.add(Dense(10, init='uniform', activation='relu'))
+        self.net.add(Dense(output_dim=self.ny, init='uniform'))
+
+        # opt_settings = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
+        opt_settings = Adam(lr=0.001)
+        self.net.compile(loss="mean_squared_error", optimizer=opt_settings)
 
     def update_network(self):
-        # function updates network by sampling a mini-batch from the ER
+        "function updates network by sampling a mini-batch from the ER"
         # Prepare train data
         chosen = list(np.random.randint(len(self.er_s), size=min(len(self.er_s), self.mbsize)))
         Xtrain = np.asarray([self.er_s[i] for i in chosen])
@@ -78,10 +72,10 @@ class QN(object):
                 target[j, self.er_a[i]] = self.er_r[i] + 0.9 * max(max(Q_sp))  # Q_sp is list of list (why?)
 
         # fit the network
-        #print "hhhhhh"
-        self.net.fit(Xtrain, target, nb_epoch=1, batch_size=256)  # single step of SGD
+        self.net.fit(Xtrain, target, nb_epoch=1, batch_size=self.mbsize, verbose=0)  # single step of SGD
 
     def append_memory(self, s, a, r, sp, done):
+        "append memory of agent with the given samples; implemented as queue"
         if (len(self.er_s) < self.er_size):
             self.er_s.append(s)
             self.er_a.append(a)
@@ -96,22 +90,29 @@ class QN(object):
             self.er_sp[self.whead] = sp
             self.er_done[self.whead] = done
             self.whead = (self.whead+1) % self.er_size
-# ===========================================================================================================
+
+# =======================================================================================
 
 with open('objs.pickle') as f:
-    agent = pickle.load(f)
+    agent, performance = pickle.load(f)
 
-env.monitor.start('./video/cartpole-0')
-for _ in range(100):
-    print("here")
+# Uncomment the below lines if you want a video recording
+# outdir = '/tmp/CartPole-Qnetwork'
+# env.monitor.start(outdir, force=True)
+
+for _ in range(3):
     s = env.reset()
     time = 0
     done = 0
 
-    while (done != True and time < 1500):
+    while (done != True and time < 200):
         env.render()
         Q = np.array(agent.net.predict(s.reshape(1,-1)))
         pi, a = epsilon_greedy(Q.ravel(),eps=0)
         sp, r, done, info = env.step(a)
         s = sp
-env.monitor.close()
+        time += 1
+
+    print "Resetting Environment. Balanced for ", time, " time steps (max possible = 200)"
+
+# env.monitor.close()
