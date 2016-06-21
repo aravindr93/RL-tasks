@@ -20,7 +20,7 @@ import time
 import numpy as np
 import pylab as pl
 import matplotlib.pyplot as plt
-import control as ctrl  	# optional, can be downloaded from Richard Murray's website (Caltech CDS)
+#import control as ctrl  	# optional, can be downloaded from Richard Murray's website (Caltech CDS)
 import scipy.linalg
 
 env = gym.make('Sphere-v0')
@@ -151,15 +151,7 @@ for _ in range(100):
 	# compute controls
 	u = -np.dot(K,err)
 
-	if(u[0]>max_u):
-		u[0]=max_u
-	elif(u[0]<-max_u):
-		u[0]=-max_u
-
-	if(u[1]>max_u):
-		u[1]=max_u
-	elif(u[1]<-max_u):
-		u[1]=-max_u
+	u = np.clip(u, -max_u, max_u)
 
 	state = env.step(u)[0]
 
