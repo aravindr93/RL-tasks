@@ -30,7 +30,7 @@ def epsilon_greedy(Q, eps=0.1):
     return pi, action
 
 
-def policy_evaluation(agent, env, num_episodes=10, max_steps=2000):
+def policy_evaluation(agent, env, num_episodes=10, max_steps=250):
     "Evaluate quality of policy by performing rollouts"
     evaluation = 0.0
     for _ in range(num_episodes):
@@ -39,10 +39,9 @@ def policy_evaluation(agent, env, num_episodes=10, max_steps=2000):
         done = 0
         time = 0
         while (done != True and time < max_steps):
-            Q = np.array(agent.actor_prime_net.predict(state.reshape(1, -1)))
-            #a = int(np.argmax(Q.ravel()))
-            sp, r, done, info = env.step(Q[0])
-            env.render()
+            action = np.array(agent.actor_prime_net.predict(state.reshape(1, -1)))
+            action = action[0]
+            sp, r, done, info = env.step(action)
             if (done != True):
                 episode_reward += r
             state = sp

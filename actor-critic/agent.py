@@ -28,7 +28,7 @@ class ActorCriticAgent():
         self.er_sp = []
 
         self.er_size = 2000  # total size of mb, impliment as queue
-        self.whead = 0  # write head
+        self.whead = 0       # write head
     
     def len_of_replay(self):
         return len(self.er_s)
@@ -51,36 +51,30 @@ class ActorCriticAgent():
     
     #check this against the paper
     def update_network(self):
-        mini_batch = list(np.random.randint(len(self.er_s), size=min(\
-                                                len(self.er_s), BATCH_SIZE)))
-        Xtrain_state = np.asarray([self.er_s[i] for i in mini_batch])
+        mb_size = min(len(self.er_s), BATCH_SIZE)
+        mini_batch = list(np.random.randint(len(self.er_s), size=mb_size))
+        Xtrain_state =  np.asarray([self.er_s[i] for i in mini_batch])
         Xtrain_action = np.array([self.er_a[i] for i in mini_batch])
-        critic_target = np.random.rand(len(mini_batch))
-        #action_for_deriv = np.random.rand(len(mini_batch))
-        
+        critic_target = np.random.rand(mb_size)
+
         for j, i in enumerate(mini_batch):
-            #action_for_deriv[j] = self.actor_net.predict(self.er_s[i])
             action_sp = self.actor_prime_net.predict(self.er_sp[i].reshape(1,-1))
             
             if (self.er_done[i] == True):
                 critic_target[j] = self.er_r[i]
             else:
-                critic_target[j] = self.er_r[i] + GAMMA*(\
-                self.critic_prime_net.predict(self.er_sp[i].reshape(1,-1), action_sp))
+                critic_target[j] = self.er_r[i] + \
+                                   GAMMA*(self.critic_prime_net.predict(self.er_sp[i].reshape(1,-1), action_sp))
         
-        #critic_target = critic_target.reshape(64, 1)
         self.critic_net.train(Xtrain_state, Xtrain_action, critic_target.reshape(-1,1))
         
-        #need to cross check these steps, very vunerable to mistakes
         actions_for_derv = self.actor_net.predict(Xtrain_state)
-        del_Q_a = self.critic_net.get_derivative_wrt_a(Xtrain_state, \
-                                            actions_for_derv)
-        #print(del_Q_a)
+        del_Q_a = self.critic_net.get_derivative_wrt_a(Xtrain_state,
+                                                       actions_for_derv)
+
         del_Q_a = np.array(del_Q_a)
-        del_Q_a = del_Q_a.reshape(64, 4)
-        #print type(del_Q_a)
-        #print(del_Q_a.shape)
-        #print(Xtrain_state.shape)
+        del_Q_a = del_Q_a.reshape(mb_size, self.action_dim)
+
         self.actor_net.train(Xtrain_state, del_Q_a)
         #upadte critic prime and actor prime network
         self.update_prime_nets()
@@ -91,6 +85,12 @@ class ActorCriticAgent():
         
         critic_weights = self.critic_net.get_weights()
         self.critic_prime_net.set_weights(critic_weights, tau)
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
 
 
