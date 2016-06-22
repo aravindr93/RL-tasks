@@ -1,9 +1,5 @@
-"""
-    Reinforcement learning agent based on Deep Deterministic 
-    Poilcy Gradient (DDPG). For continous action spaces.
-    Sarvjeet Singh Ghotra, 21th June 2016
-"""
-
+# ERROR: There seems to be an issue with array size misalignment with tensorflow
+# Are we hand-coding sizes somewhere?
 #TODO: Add Noise to the actor for exploration.
 #      Add BatchNormalization layers in actor and critic networks.
 
