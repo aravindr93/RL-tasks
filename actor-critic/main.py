@@ -3,29 +3,29 @@
     22nd June 2016,
     Contributors: Aravind Rajeswaran, Sarvjeet Ghotra, Aravind Srinivas
 """
-#       TODO: Add Noise to the actor for exploration.
-#       Add BatchNormalization layers in actor and critic networks.
-#       Requires training in GPU since the network is too slow
 
 import gym
-import time as t
-from agent import ActorCriticAgent
-from agent import *
+from ActorCritic import ActorCritic
+from ActorCritic import *
 from utils import *
+from derivative_routines import *
 import copy
 import pickle
+import time as t
 
 
-REPLAY_MEMORY = 2000 #According to the paper its 10^6
+REPLAY_MEMORY = 2000  #According to the paper its 10^6
 
 def main():
     
-    env = gym.make('InvertedPendulum-v1')
+    env = gym.make('Pendulum-v0')
     action_dim = env.action_space.shape[0]
     state_dim = env.observation_space.shape[0]
-    agent = ActorCriticAgent(state_dim, action_dim)
+    agent = ActorCritic(state_dim, action_dim)
     state = env.reset()
-    timestep_limit = min(env.spec.timestep_limit, 20)   # For checking purposes; make it proper for run
+    timestep_limit = min(250, env.spec.timestep_limit)
+    print "timestep limit set to : ", timestep_limit
+    #timestep_limit = env.spec.timestep_limit   # For checking purposes; make it proper for run
     # Initial data build up
     done_flag = 0
     for i in range(REPLAY_MEMORY):
@@ -42,19 +42,22 @@ def main():
 
     # Initial Training for a few steps
     for _ in range(5):
-        agent.update_network()
+        agent.update_networks()
+        agent.update_target_networks()
 
-    print "Initial network performance = ", policy_evaluation(agent, env, 5)
+    print "Initial network performance = ", policy_evaluation(agent, env, 2)
     # =================================================================================
 
     print "******** Starting learning process *************"
-    num_episodes = 10
-    update_freq = 1       # update after how many steps (within each episode)
-    print_freq = 1        # how often to print (episodes)
+    num_episodes = 5
+    update_freq = 1        # update after how many steps (within each episode)
+    print_freq = 1         # how often to print (episodes)
 
     performance = np.zeros(num_episodes)
     best_ep = 0
     best_agent = copy.deepcopy(agent)
+
+    start_time = t.time()
 
     for ep in range(num_episodes):
         done_flag = 0
@@ -62,23 +65,27 @@ def main():
         time = 0
     
         while (done_flag!=True and time<=timestep_limit):
-            action_pred = np.array(agent.actor_net.predict(state.reshape(1,-1)))
-            action_pred = action_pred[0]            
-            next_state, reward, done_flag, _ = env.step(action_pred)
-            agent.append_memory(state, action_pred, reward, next_state, done_flag)
+            actor_out = agent.learner.actor.predict(state.reshape(1,-1))[0]
+            action = actor_out   # need to add exploration here
+            next_state, reward, done_flag, _ = env.step(action)
+            agent.append_memory(state, action, reward, next_state, done_flag)
             state = next_state
 
-            #print time, timestep_limit
-    
             if (time % update_freq == 0):
-                agent.update_network()
+                agent.update_networks(epochs=5)
+                #agent.update_target_networks()  --> Ideall I should update here, but it's way too slow.
+                #print time, timestep_limit
     
             time += 1
 
-            performance[ep] = policy_evaluation(agent, env, 2)
+        performance[ep] = policy_evaluation(agent, env, 5)
+
+        # Update the target networks (I'll use a larger tau here)
+        agent.update_target_networks(tau=0.01)
+
 
         if (ep % print_freq == 0):
-            print "Now in episode: ", ep, " of ", num_episodes
+            print "Now in episode: ", ep+1, " of ", num_episodes
             print "Agent performance = ", performance[ep]
 
         if (performance[ep] > performance[best_ep]):
@@ -91,9 +98,9 @@ def main():
     plt.show()
     
     
-    # Save agent to file
-    with open('objs.pickle', 'wb') as f:
-        pickle.dump([best_agent, performance], f)
+    # Save agent to file (uncomment if you want)
+    #with open('objs.pickle', 'wb') as f:
+    #    pickle.dump([best_agent, performance], f)
 
 if __name__ == '__main__':
     main()

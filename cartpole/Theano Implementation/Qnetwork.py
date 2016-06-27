@@ -141,6 +141,11 @@ class QN(object):
             self.er_done[self.whead] = done
             self.whead = (self.whead+1) % self.er_size
 
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
 start_time = t.time()
 # Set up the Q learning agent
@@ -172,7 +177,7 @@ print "Initial network performance = ", policy_evaluation(agent, env, 5)
 print "******** Starting learning process *************"
 num_episodes = 250
 update_freq = 1      # update after how many steps (within each episode)
-print_freq = 25      # how often to print (episodes)
+print_freq = 1	     # how often to print (episodes)
 
 max_steps = 250      # number of steps before resetting env and beginning next episode
 
@@ -215,7 +220,7 @@ plt.plot(performance[-100:])
 plt.show()
 
 # Save agent to file
-with open('objs.pickle', 'wb') as f:
+with open('acrobot.pickle', 'wb') as f:
     pickle.dump([best_agent, performance], f)
 
 # Evaluate performance of best agent
