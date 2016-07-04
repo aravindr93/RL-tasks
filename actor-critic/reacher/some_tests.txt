@@ -1,0 +1,22 @@
+# Some tests
+state_dim = 3
+action_dim = 2
+mb_size = 10
+state = np.random.normal(loc=5.0, size=(mb_size,state_dim)).reshape(mb_size,state_dim)
+exploration = np.random.normal(loc=2.0, size=(mb_size,action_dim)).reshape(mb_size,action_dim)
+target = np.random.normal(loc=100.0, size=(mb_size,1)).reshape(mb_size,1)
+print state[0], exploration[0], target[0], len(state)
+
+agent = ActorCritic(state_dim, action_dim)
+
+actor_out = agent.learner.actor.predict(state)
+critic_out = agent.learner.net1.predict([state, exploration])
+actor_t_out = agent.target.actor.predict(state)
+critic_t_out = agent.target.critic.predict([state, exploration])
+
+print actor_out[0], critic_out[0], actor_t_out[0], critic_t_out[0]
+
+agent.append_memory(state[0], actor_out[0]+exploration[0], np.random.rand(1), state[0], 0)
+print agent.learner.actor.get_weights()
+agent.update_networks()
+print agent.learner.actor.get_weights()
