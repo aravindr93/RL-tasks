@@ -16,8 +16,9 @@ class PendulumEnv(gym.Env):
         self.g_range = [9.5, 10.5]
         self.m_range = [0.8, 1.2]
         self.l_range = [0.8, 1.2]
-        param = self.draw()
-        self.set_param(param)
+        
+        #param = self.draw()
+        #self.set_param(param)
         """
         self.max_speed=8
         self.max_torque=2.
@@ -25,9 +26,6 @@ class PendulumEnv(gym.Env):
         self.dt=.05
         self.viewer = None
         
-        high = np.array([1., 1., self.max_speed])
-        self.action_space = spaces.Box(low=-self.max_torque, high=self.max_torque, shape=(1,))
-        self.observation_space = spaces.Box(low=-high, high=high)
 
         self._seed()
 
@@ -50,6 +48,9 @@ class PendulumEnv(gym.Env):
         
     def _step(self,u, param):
         self.set_param(param)
+        high = np.array([1., 1., self.max_speed])
+        self.action_space = spaces.Box(low=-self.max_torque, high=self.max_torque, shape=(1,))
+        self.observation_space = spaces.Box(low=-high, high=high)
         th, thdot = self.state # th := theta
         
         """
